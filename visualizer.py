@@ -48,14 +48,30 @@ class Visualizer:
         self.entity_types = {}
         
     def set_type_colors(self, type_colors):
-        # TODO: 设置不同类型所对应的颜色
-        pass
+        # 设置不同类型所对应的颜色
+        self.type_colors = type_colors
+
+    def set_segment_color(self, color):
+        # 设置segment对应的颜色
+        self.segment_color = color
+
+    def set_readin_order_color(self, color):
+        # 设置阅读顺序对应的颜色
+        self.reading_ordercolor = color
+
+    def set_linking_color(self, color):
+        # 设置linking对应的颜色
+        self.linking_color = color
+
+    def set_word_color(self, color):
+        # 设置word对应的颜色
+        self.word_color = color
 
     def set_entity_types(self, entity_types):
         # 设置实体类型
         self.entity_types = entity_types
 
-    def format_box(self, raw_box):
+    def __format_box(self, raw_box):
         # 框转换为后续处理需要的类型(四点元组)
         box = []
         if isinstance(raw_box[0], int):
@@ -72,7 +88,7 @@ class Visualizer:
             box.append(tuple(raw_box[3]))
         return box
 
-    def get_entity_name(self, entity, word_txts, get_wordpos_by_id, use_entity_text=False, use_entity_type=False):
+    def __get_entity_name(self, entity, word_txts, get_wordpos_by_id, use_entity_text=False, use_entity_type=False):
         entity_elements = entity['word_idx']
         if use_entity_type == True and use_entity_text == True:
             entity_name = entity['label']+'-'
@@ -86,7 +102,7 @@ class Visualizer:
             entity_name = entity['label']
         return entity_name
 
-    def get_entity_box(self, entity, w, h, word_boxes, get_wordpos_by_id):
+    def __get_entity_box(self, entity, w, h, word_boxes, get_wordpos_by_id):
         entity_elements = entity['word_idx']
         entity_box = [w, h, 0, 0]
         for element in entity_elements:
@@ -100,7 +116,7 @@ class Visualizer:
                 entity_box[3] = max(entity_box[3], word_box[0][1], word_box[1][1],word_box[2][1], word_box[3][1])
         return entity_box
 
-    def get_json_info(self, 
+    def __get_json_info(self, 
                       json, 
                       img_size,
                       use_entity_type=False,
@@ -125,7 +141,7 @@ class Visualizer:
 
         for doc in json['document']:
             raw_segmemt_box = doc['box']
-            segment_box = self.format_box(raw_segmemt_box)
+            segment_box = self.__format_box(raw_segmemt_box)
             segment_boxes.append(segment_box)
             segment_txt = doc['text']
             segment_txts.append(segment_txt)
@@ -133,7 +149,7 @@ class Visualizer:
             for word in words:
                 if 'box' in word:
                     raw_word_box = word['box']
-                    word_box = self.format_box(raw_word_box)
+                    word_box = self.__format_box(raw_word_box)
                     word_boxes.append(word_box)
                     word_txt = word['text']
                     word_txts.append(word_txt)
@@ -163,8 +179,8 @@ class Visualizer:
                 entity_color_type = self.entity_types[entity['label']]
                 entity_elements = entity['word_idx']
                 entity_id = entity['entity_id']
-                entity_name = self.get_entity_name(entity, word_txts, get_wordpos_by_id, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
-                entity_box = self.get_entity_box(entity, img_size[1], img_size[0], word_boxes, get_wordpos_by_id)
+                entity_name = self.__get_entity_name(entity, word_txts, get_wordpos_by_id, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
+                entity_box = self.__get_entity_box(entity, img_size[1], img_size[0], word_boxes, get_wordpos_by_id)
                 for element in entity_elements:
                     if element in get_wordpos_by_id:
                         element_pos = get_wordpos_by_id[element]
@@ -191,11 +207,11 @@ class Visualizer:
                     label_linkings.append((entity1_pos, entity2_pos))
         return segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types
 
-    def set_tag_size(self, w, h):
+    def __set_tag_size(self, w, h):
         base = min(w, h)
         return int(base / 50), int(base / 50)
     
-    def draw_txt_in_segment(self,
+    def __draw_txt_in_segment(self,
             img_size, 
             box, 
             txt, 
@@ -208,7 +224,7 @@ class Visualizer:
         img_text = Image.new('RGB', (box_width, box_height), (255, 255, 255))
         draw_text = ImageDraw.Draw(img_text)
         if txt:
-            font = self.create_font(txt, (box_width, box_height), font_path)
+            font = self.__create_font(txt, (box_width, box_height), font_path)
             draw_text.text([0, 0], txt, fill=(0, 0, 0), font=font)
         img_box = img_text
 
@@ -227,7 +243,7 @@ class Visualizer:
             borderValue=(255, 255, 255))
         return img_right_text
     
-    def draw_order(self,
+    def __draw_order(self,
             img_size, 
             box, 
             order, 
@@ -238,7 +254,7 @@ class Visualizer:
         box_height = reading_order_size
         img_order = Image.new('RGB', (box_width, box_height), (255, 255, 255))
         draw_order = ImageDraw.Draw(img_order)
-        font = self.create_font(str(order), (box_width, box_height), font_path)
+        font = self.__create_font(str(order), (box_width, box_height), font_path)
         draw_order.text([0, 0], str(order), fill=color, font=font)
         img_box = img_order
 
@@ -257,7 +273,7 @@ class Visualizer:
             borderValue=(255, 255, 255))
         return img_right_order
     
-    def draw_entity_name(self,
+    def __draw_entity_name(self,
                 img_size, 
                 box, 
                 ename, 
@@ -270,7 +286,7 @@ class Visualizer:
         img_entity = Image.new('RGB', (box_width, box_height), (255, 255, 255))
         draw_entity = ImageDraw.Draw(img_entity)
         if ename:
-            font = self.create_font(ename, (box_width, box_height), font_path)
+            font = self.__create_font(ename, (box_width, box_height), font_path)
             draw_entity.text([0, 0], ename, fill=color, font=font)
         img_box = img_entity
 
@@ -289,7 +305,7 @@ class Visualizer:
             borderValue=(255, 255, 255))
         return img_right_entity
     
-    def create_font(self, txt, sz, font_path="./fonts/simfang.ttf"):
+    def __create_font(self, txt, sz, font_path="./fonts/simfang.ttf"):
         font_size = int(sz[1] * 0.99)
         font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
         length = font.getsize(txt)[0]
@@ -298,7 +314,7 @@ class Visualizer:
             font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
         return font
     
-    def draw_txt_in_word(self, 
+    def __draw_txt_in_word(self, 
                          img_size, 
                       box, 
                       txt, 
@@ -311,7 +327,7 @@ class Visualizer:
         img_text = Image.new('RGB', (box_width, box_height), (255, 255, 255))
         draw_text = ImageDraw.Draw(img_text)
         if txt:
-            font = self.create_font(txt, (box_width, box_height), font_path)
+            font = self.__create_font(txt, (box_width, box_height), font_path)
             draw_text.text([0, 0], txt, fill=(0, 0, 0), font=font)
         img_box = img_text
 
@@ -330,7 +346,7 @@ class Visualizer:
             borderValue=(255, 255, 255))
         return img_right_text
 
-    def draw_annotation(self,
+    def __draw_annotation(self,
             img_size,
             segment_boxes,
             word_boxes,
@@ -360,7 +376,7 @@ class Visualizer:
         img = np.ones((h, w, 3), dtype=np.uint8) * 255
         
         # FIXME: 设置角标的大小, 可以只留下一个
-        entity_tag_height, reading_order_size = self.set_tag_size(w, h)
+        entity_tag_height, reading_order_size = self.__set_tag_size(w, h)
 
         # FIXME: 决定是否画一些东西, 这里要大改. 这里目前只有一个use entity, 而不是分开来, 不知道当时是怎么想的
         use_entity = use_entity_type | use_entity_text
@@ -389,14 +405,14 @@ class Visualizer:
             cv2.rectangle(img_segment_text, box[0], box[2], self.segment_color, 1)
             img = cv2.bitwise_and(img, img_segment_text)
             if use_word == False:
-                img_right_text = self.draw_txt_in_segment((w, h), box, txt, font_path)
+                img_right_text = self.__draw_txt_in_segment((w, h), box, txt, font_path)
                 pts = np.array(box, np.int32).reshape((-1, 1, 2))
                 cv2.polylines(img_right_text, [pts], True, color, 1)
                 img = cv2.bitwise_and(img, img_right_text)
             # draw reading order
             if use_order:
                 order_box = ([[box[0][0]-reading_order_size, box[0][1]], [box[0][0], box[0][1]], [box[0][0], box[0][1]+reading_order_size], [box[0][0]-reading_order_size, box[0][1]+reading_order_size]])
-                img_right_order = self.draw_order(img_size=( w, h), box=order_box, order=order, color=self.reading_order_color, reading_order_size=reading_order_size)
+                img_right_order = self.__draw_order(img_size=( w, h), box=order_box, order=order, color=self.reading_order_color, reading_order_size=reading_order_size)
                 pts = np.array(order_box, np.int32).reshape((-1, 1, 2))
                 cv2.polylines(img_right_order, [pts], True, self.reading_order_color, 1)
                 img = cv2.bitwise_and(img, img_right_order)
@@ -421,7 +437,7 @@ class Visualizer:
         if use_word == True:
             if get_word_txt_by_box != None:
                 for box, content in get_word_txt_by_box.items():
-                    img_right_text = self.draw_txt_in_word((w, h), box, content, font_path)
+                    img_right_text = self.__draw_txt_in_word((w, h), box, content, font_path)
                     pts = np.array(box, np.int32).reshape((-1, 1, 2))
                     cv2.polylines(img_right_text, [pts], True, (255, 255, 255), 1)
                     cv2.rectangle(img_right_text, box[0], box[2], self.word_color, 1)
@@ -441,7 +457,7 @@ class Visualizer:
                                 [box[0]+int(char_cnt * self.font_aspect_ratio * entity_tag_height), box[1]-entity_tag_height], \
                                 [box[0]+int(char_cnt * self.font_aspect_ratio * entity_tag_height), box[1]], \
                                 [box[0], box[1]]])
-                    img_right_entity = self.draw_entity_name((w, h), box=entity_box, ename=name, color=color, char_cnt=char_cnt, entity_tag_height=entity_tag_height)
+                    img_right_entity = self.__draw_entity_name((w, h), box=entity_box, ename=name, color=color, char_cnt=char_cnt, entity_tag_height=entity_tag_height)
                     pts = np.array(entity_box, np.int32).reshape((-1, 1, 2))
                     cv2.polylines(img_right_entity, [pts], True, color, 1)
                     img = cv2.bitwise_and(img, img_right_entity)
@@ -498,10 +514,10 @@ class Visualizer:
 
         img_size = (json['img']['height'], json['img']['width'])
         
-        segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.get_json_info(json, img_size, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
+        segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.__get_json_info(json, img_size, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
 
         # 画右图
-        img_right = self.draw_annotation(
+        img_right = self.__draw_annotation(
             img_size=img_size,
             segment_boxes=segment_boxes,
             word_boxes=word_boxes,
