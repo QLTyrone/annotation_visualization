@@ -72,13 +72,18 @@ class Visualizer:
             box.append(tuple(raw_box[3]))
         return box
 
-    def get_entity_name(self, entity, word_txts, get_wordpos_by_id):
+    def get_entity_name(self, entity, word_txts, get_wordpos_by_id, use_entity_text=False, use_entity_type=False):
         entity_elements = entity['word_idx']
-        entity_name = entity['label']+'-'
-        for element in entity_elements:
-            if element in get_wordpos_by_id:
-                element_pos = get_wordpos_by_id[element]
-                entity_name += word_txts[element_pos]
+        if use_entity_type == True and use_entity_text == True:
+            entity_name = entity['label']+'-'
+        elif use_entity_text == False:
+            entity_name = ''
+            for element in entity_elements:
+                if element in get_wordpos_by_id:
+                    element_pos = get_wordpos_by_id[element]
+                    entity_name += word_txts[element_pos]
+        else:
+            entity_name = entity['label']
         return entity_name
 
     def get_entity_box(self, entity, w, h, word_boxes, get_wordpos_by_id):
@@ -95,7 +100,12 @@ class Visualizer:
                 entity_box[3] = max(entity_box[3], word_box[0][1], word_box[1][1],word_box[2][1], word_box[3][1])
         return entity_box
 
-    def get_json_info(self, json, img_size):
+    def get_json_info(self, 
+                      json, 
+                      img_size,
+                      use_entity_type=False,
+                      use_entity_text=False
+                      ):
         # 获得json文件中的信息
         # TODO: 更改这部分内容
         segment_boxes = []
@@ -153,7 +163,7 @@ class Visualizer:
                 entity_color_type = self.entity_types[entity['label']]
                 entity_elements = entity['word_idx']
                 entity_id = entity['entity_id']
-                entity_name = self.get_entity_name(entity, word_txts, get_wordpos_by_id)
+                entity_name = self.get_entity_name(entity, word_txts, get_wordpos_by_id, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
                 entity_box = self.get_entity_box(entity, img_size[1], img_size[0], word_boxes, get_wordpos_by_id)
                 for element in entity_elements:
                     if element in get_wordpos_by_id:
@@ -287,14 +297,44 @@ class Visualizer:
             font_size = int(font_size * sz[0] / length)
             font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
         return font
+    
+    def draw_txt_in_word(self, 
+                         img_size, 
+                      box, 
+                      txt, 
+                      font_path="./doc/fonts/simfang.ttf"):
+        box_height = int(
+            math.sqrt((box[0][0] - box[3][0])**2 + (box[0][1] - box[3][1])**2))
+        box_width = int(
+            math.sqrt((box[0][0] - box[1][0])**2 + (box[0][1] - box[1][1])**2))
+        
+        img_text = Image.new('RGB', (box_width, box_height), (255, 255, 255))
+        draw_text = ImageDraw.Draw(img_text)
+        if txt:
+            font = self.create_font(txt, (box_width, box_height), font_path)
+            draw_text.text([0, 0], txt, fill=(0, 0, 0), font=font)
+        img_box = img_text
+
+        pts1 = np.float32(
+            [[0, 0], [box_width, 0], [box_width, box_height], [0, box_height]])
+        pts2 = np.array(box, dtype=np.float32)
+        M = cv2.getPerspectiveTransform(pts1, pts2)
+
+        img_box = np.array(img_box, dtype=np.uint8)
+        img_right_text = cv2.warpPerspective(
+            img_box,
+            M,
+            img_size,
+            flags=cv2.INTER_NEAREST,
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=(255, 255, 255))
+        return img_right_text
 
     def draw_annotation(self,
             img_size,
             segment_boxes,
             word_boxes,
             use_segment_text,
-            use_image=False,
-            image_path=None,
             use_word=False,
             use_entity_type=False,
             use_entity_text=False,
@@ -315,16 +355,15 @@ class Visualizer:
         # 绘制右图
         # TODO: 解释参数含义
 
-        # FIXME: 创建画布
+        # 创建画布
         h, w = img_size
         img = np.ones((h, w, 3), dtype=np.uint8) * 255
         
-        # FIXME: 设置角标的大小
+        # FIXME: 设置角标的大小, 可以只留下一个
         entity_tag_height, reading_order_size = self.set_tag_size(w, h)
 
         # FIXME: 决定是否画一些东西, 这里要大改. 这里目前只有一个use entity, 而不是分开来, 不知道当时是怎么想的
-        use_order = True
-        use_entity = True
+        use_entity = use_entity_type | use_entity_text
         if segment_txts is None or len(segment_txts) != len(segment_boxes):
             segment_txts = [None] * len(segment_boxes)
         if segment_orders is None or len(segment_orders) != len(segment_boxes):
@@ -340,7 +379,6 @@ class Visualizer:
             use_entity = False
         
         # draw segment boxes
-        # draw_left1 = ImageDraw.Draw(img_left)
         for idx, (box, txt, order) in enumerate(zip(segment_boxes, 
                                                     segment_txts, 
                                                     segment_orders)):
@@ -350,8 +388,7 @@ class Visualizer:
             img_segment_text = np.ones((h, w, 3), dtype=np.uint8) * 255 
             cv2.rectangle(img_segment_text, box[0], box[2], self.segment_color, 1)
             img = cv2.bitwise_and(img, img_segment_text)
-            # FIXME: 画segment的text, 这里要试一下是干什么的
-            if use_segment_text:
+            if use_word == False:
                 img_right_text = self.draw_txt_in_segment((w, h), box, txt, font_path)
                 pts = np.array(box, np.int32).reshape((-1, 1, 2))
                 cv2.polylines(img_right_text, [pts], True, color, 1)
@@ -381,16 +418,17 @@ class Visualizer:
         #                 cv2.polylines(img_right_entity_id, [pts], True, (255, 255, 255), 1)
         #                 img = cv2.bitwise_and(img, img_right_entity_id)
         # draw words
-        # if use_word_txt:
-        #     if get_word_txt_by_box != None:
-        #         for box, content in get_word_txt_by_box.items():
-        #             img_right_text = draw_txt_in_word((w, h), box, content, font_path)
-        #             pts = np.array(box, np.int32).reshape((-1, 1, 2))
-        #             cv2.polylines(img_right_text, [pts], True, (255, 255, 255), 1)
-        #             cv2.rectangle(img_right_text, box[0], box[2], word_color, 1)
-        #             img = cv2.bitwise_and(img, img_right_text)
+        if use_word == True:
+            if get_word_txt_by_box != None:
+                for box, content in get_word_txt_by_box.items():
+                    img_right_text = self.draw_txt_in_word((w, h), box, content, font_path)
+                    pts = np.array(box, np.int32).reshape((-1, 1, 2))
+                    cv2.polylines(img_right_text, [pts], True, (255, 255, 255), 1)
+                    cv2.rectangle(img_right_text, box[0], box[2], self.word_color, 1)
+                    img = cv2.bitwise_and(img, img_right_text)
 
         # draw entity
+        # 绘制实体内容
         if entity_boxes != None:
             for idx, (box, name, type) in enumerate(zip(entity_boxes, 
                                                     entity_names,
@@ -409,17 +447,19 @@ class Visualizer:
                     img = cv2.bitwise_and(img, img_right_entity)
 
         # draw label linkings
-        if label_linkings != None and entity_boxes != None:
-            for label_lingking in label_linkings:
-                label1 = label_lingking[0]
-                label2 = label_lingking[1]
-                label1_box = entity_boxes[label1]
-                label2_box = entity_boxes[label2]
-                label1_point = ((label1_box[0]+label1_box[2])//2, (label1_box[1]+label1_box[3])//2)
-                label2_point = ((label2_box[0]+label2_box[2])//2, (label2_box[1]+label2_box[3])//2)
-                img_linking = np.array(Image.new('RGB', (w, h), (255, 255, 255)), dtype=np.uint8)
-                cv2.line(img_linking, label1_point, label2_point, self.lingking_color, 1, 4)
-                img = cv2.bitwise_and(img, img_linking)
+        # TODO: 如果label_linking不合法, 需要报错, 这部分也可以在前面的get info里报错
+        if use_linking == True:
+            if label_linkings != None and entity_boxes != None:
+                for label_lingking in label_linkings:
+                    label1 = label_lingking[0]
+                    label2 = label_lingking[1]
+                    label1_box = entity_boxes[label1]
+                    label2_box = entity_boxes[label2]
+                    label1_point = ((label1_box[0]+label1_box[2])//2, (label1_box[1]+label1_box[3])//2)
+                    label2_point = ((label2_box[0]+label2_box[2])//2, (label2_box[1]+label2_box[3])//2)
+                    img_linking = np.array(Image.new('RGB', (w, h), (255, 255, 255)), dtype=np.uint8)
+                    cv2.line(img_linking, label1_point, label2_point, self.lingking_color, 1, 4)
+                    img = cv2.bitwise_and(img, img_linking)
 
         return np.array(img)
 
@@ -459,7 +499,7 @@ class Visualizer:
         img_size = (json['img']['height'], json['img']['width'])
         
         # TODO: get json info, 要总结一下具体有什么info
-        segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.get_json_info(json, img_size)
+        segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.get_json_info(json, img_size, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
 
         # 画右图
         img_right = self.draw_annotation(
@@ -467,11 +507,10 @@ class Visualizer:
             segment_boxes=segment_boxes,
             word_boxes=word_boxes,
             use_segment_text=use_entity_text,
-            use_image=use_image,
-            image_path=image_path,
             use_word=use_word,
             use_entity_type=use_entity_type,
             use_entity_text=use_entity_text,
+            use_order=use_order,
             use_linking=use_linking,
             segment_txts=segment_txts,
             word_txts=word_txts,

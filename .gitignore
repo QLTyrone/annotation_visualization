@@ -2,4 +2,8 @@
 /origin
 **/__pycache__
 test.py
+test_ro.py
+input_test.png
 output_test.png
+input_test_ro.png
+output_test_ro.png
