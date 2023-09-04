@@ -19,7 +19,7 @@
 
 ## 参考代码
 下面提供一个参考的使用方式
-```
+```python
 json = {...}
 v = Visualizer()
 v.set_entity_types({...})
@@ -31,4 +31,4 @@ v.v.visualize(
     use_entity_text=True, 
     use_entity_type=True, 
     use_order=True)
-```python
+```
