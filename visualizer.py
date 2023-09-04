@@ -123,14 +123,12 @@ class Visualizer:
                       use_entity_text=False
                       ):
         # 获得json文件中的信息
-        # TODO: 更改这部分内容
         segment_boxes = []
         segment_txts = []
         segment_orders = []
         word_boxes = []
         word_txts = []
         get_word_txt_by_box = {}
-        # FIXME: 这个是什么
         wordnum = 10000
         word_entity_paints = [None] * wordnum
         get_wordpos_by_id = {}
@@ -369,29 +367,27 @@ class Visualizer:
             entity_color_types=None,
             font_path="./fonts/simfang.ttf"):
         # 绘制右图
-        # TODO: 解释参数含义
 
         # 创建画布
         h, w = img_size
         img = np.ones((h, w, 3), dtype=np.uint8) * 255
         
-        # FIXME: 设置角标的大小, 可以只留下一个
         entity_tag_height, reading_order_size = self.__set_tag_size(w, h)
 
-        # FIXME: 决定是否画一些东西, 这里要大改. 这里目前只有一个use entity, 而不是分开来, 不知道当时是怎么想的
         use_entity = use_entity_type | use_entity_text
+
         if segment_txts is None or len(segment_txts) != len(segment_boxes):
-            segment_txts = [None] * len(segment_boxes)
+            print("illegal segment text")
         if segment_orders is None or len(segment_orders) != len(segment_boxes):
-            segment_orders = [None] * len(segment_boxes)
+            print("illegal segment order")
             use_order = False
         if word_txts is None or len(word_txts) != len(word_boxes):
-            word_txts = [None] * len(word_boxes)
+            print("illegal word text")
         if word_entity_ids is None or len(word_entity_ids) != len(word_boxes):
-            word_entity_ids = [None] * len(word_boxes)
+            print("illegal entity id")
             use_entity = False
         if word_entity_types is None or len(word_entity_types) != len(word_boxes):
-            word_entity_types = [None] * len(word_boxes)
+            print("illegal entity types")
             use_entity = False
         
         # draw segment boxes
@@ -463,7 +459,6 @@ class Visualizer:
                     img = cv2.bitwise_and(img, img_right_entity)
 
         # draw label linkings
-        # TODO: 如果label_linking不合法, 需要报错, 这部分也可以在前面的get info里报错
         if use_linking == True:
             if label_linkings != None and entity_boxes != None:
                 for label_lingking in label_linkings:
@@ -476,6 +471,8 @@ class Visualizer:
                     img_linking = np.array(Image.new('RGB', (w, h), (255, 255, 255)), dtype=np.uint8)
                     cv2.line(img_linking, label1_point, label2_point, self.lingking_color, 1, 4)
                     img = cv2.bitwise_and(img, img_linking)
+            else: 
+                print("illegal linking data")
 
         return np.array(img)
 
