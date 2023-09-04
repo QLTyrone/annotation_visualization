@@ -16,3 +16,19 @@
 - use_entity_text是实体内容文字显示的开关
 - use_linking是实体链接显示的开关
 - use_order是阅读顺序显示的开关
+
+## 参考代码
+下面提供一个参考的使用方式
+```
+json = {...}
+v = Visualizer()
+v.set_entity_types({...})
+v.v.visualize(
+    json, 
+    save_path="...", 
+    use_image=True, 
+    image_path="...", 
+    use_entity_text=True, 
+    use_entity_type=True, 
+    use_order=True)
+```python
