@@ -1,2 +1,5 @@
 /TODO
 /origin
+**/__pycache__
+test.py
+output_test.png
