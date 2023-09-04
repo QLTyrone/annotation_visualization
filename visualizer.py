@@ -302,7 +302,7 @@ class Visualizer:
                          img_size, 
                       box, 
                       txt, 
-                      font_path="./doc/fonts/simfang.ttf"):
+                      font_path="./fonts/simfang.ttf"):
         box_height = int(
             math.sqrt((box[0][0] - box[3][0])**2 + (box[0][1] - box[3][1])**2))
         box_width = int(
@@ -498,7 +498,6 @@ class Visualizer:
 
         img_size = (json['img']['height'], json['img']['width'])
         
-        # TODO: get json info, 要总结一下具体有什么info
         segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.get_json_info(json, img_size, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
 
         # 画右图
@@ -525,10 +524,22 @@ class Visualizer:
             entity_color_types=entity_color_types,
             font_path="./fonts/simfang.ttf"
             )
+        
+        # 画左图
+        img_left = image.copy()
+        if use_image:
+            draw_left1 = ImageDraw.Draw(img_left)
+            for box in segment_boxes:
+                color = self.segment_color
+                draw_left1.polygon(box, fill=color)
+            # img_left = Image.blend(image, img_left, 0.5)
+            for box in word_boxes:
+                color = self.word_color
+                draw_left1.polygon(box, fill=color)
+            img_left = Image.blend(image, img_left, 0.5)
 
         # 拼左图
         if use_image:
-            img_left = image.copy()
             img_show = Image.new('RGB', (img_size[1] * 2, img_size[0]), (255, 255, 255))
             img_show.paste(img_left, (0, 0, img_size[1], img_size[0]))
             img_show.paste(Image.fromarray(img_right), (img_size[1], 0, img_size[1] * 2, img_size[0]))
