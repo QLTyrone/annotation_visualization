@@ -376,21 +376,22 @@ class Visualizer:
 
         use_entity = use_entity_type | use_entity_text
 
-        if segment_txts is None or len(segment_txts) != len(segment_boxes):
+        if use_word == False and (segment_txts is None or len(segment_txts) != len(segment_boxes)):
             print("illegal segment text")
-        if segment_orders is None or len(segment_orders) != len(segment_boxes):
+        if use_order == True and (segment_orders is None or len(segment_orders) != len(segment_boxes)):
             print("illegal segment order")
-            use_order = False
-        if word_txts is None or len(word_txts) != len(word_boxes):
+        if use_word == True and (word_txts is None or len(word_txts) != len(word_boxes)):
             print("illegal word text")
-        if word_entity_ids is None or len(word_entity_ids) != len(word_boxes):
+        if use_entity == True and (word_entity_ids is None or len(word_entity_ids) != len(word_boxes)):
             print("illegal entity id")
             use_entity = False
-        if word_entity_types is None or len(word_entity_types) != len(word_boxes):
+        if use_entity == True and (word_entity_types is None or len(word_entity_types) != len(word_boxes)):
             print("illegal entity types")
             use_entity = False
         
         # draw segment boxes
+        if use_order == False:
+            segment_orders = [None] * len(segment_boxes)
         for idx, (box, txt, order) in enumerate(zip(segment_boxes, 
                                                     segment_txts, 
                                                     segment_orders)):
@@ -575,7 +576,6 @@ class Visualizer:
             img_left = Image.blend(image, img_left, 0.5)
 
         # 拼左图
-        # FIXME: 拼图拼不上,因为左右大小不一样
         if use_image:
             img_show = Image.new('RGB', (img_size[1] * 2, img_size[0]), (255, 255, 255))
             img_show.paste(img_left, (0, 0, img_size[1], img_size[0]))
