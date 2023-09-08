@@ -475,6 +475,26 @@ class Visualizer:
                 print("illegal linking data")
 
         return np.array(img)
+    
+    def __get_border(self, json):
+        # 推导边框
+        max_w = 0
+        max_h = 0
+        min_w = float("inf")
+        min_h = float("inf")
+        for seg in json['document']:
+            box = seg['box']
+            box = self.__format_box(box)
+            max_w = max(box[0][0], box[1][0], box[2][0], box[3][0], max_w)
+            max_h = max(box[0][1], box[1][1], box[2][1], box[3][1], max_h)
+            min_w = min(box[0][0], box[1][0], box[2][0], box[3][0], min_w)
+            min_h = min(box[0][0], box[1][0], box[2][0], box[3][0], min_h)
+            for word in seg['words']:
+                box = word['box']
+                box = self.__format_box(box)
+                max_w = max(box[0][0], box[1][0], box[2][0], box[3][0], max_w)
+                max_h = max(box[0][1], box[1][1], box[2][1], box[3][1], max_h)
+        return (max_h + min_h, max_w + min_w)
 
     def visualize(self,
             json, 
@@ -508,8 +528,11 @@ class Visualizer:
             image = Image.open(image_path)
             if image.mode != 'RGB':
                 image = image.convert('RGB')
-
-        img_size = (json['img']['height'], json['img']['width'])
+            img_size = (json['img']['height'], json['img']['width'])
+        elif 'img' in json:
+            img_size = (json['img']['height'], json['img']['width'])
+        else:
+            img_size = self.__get_border(json)
         
         segment_boxes, word_boxes, segment_txts, word_txts, segment_orders, word_entity_ids, word_entity_types, word_entity_paints, entity_names, entity_boxes, get_word_txt_by_box, label_linkings, entity_color_types = self.__get_json_info(json, img_size, use_entity_text=use_entity_text, use_entity_type=use_entity_type)
 
@@ -539,8 +562,8 @@ class Visualizer:
             )
         
         # 画左图
-        img_left = image.copy()
         if use_image:
+            img_left = image.copy()
             draw_left1 = ImageDraw.Draw(img_left)
             for box in segment_boxes:
                 color = self.segment_color
@@ -552,6 +575,7 @@ class Visualizer:
             img_left = Image.blend(image, img_left, 0.5)
 
         # 拼左图
+        # FIXME: 拼图拼不上,因为左右大小不一样
         if use_image:
             img_show = Image.new('RGB', (img_size[1] * 2, img_size[0]), (255, 255, 255))
             img_show.paste(img_left, (0, 0, img_size[1], img_size[0]))
