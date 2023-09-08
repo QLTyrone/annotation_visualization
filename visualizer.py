@@ -494,7 +494,7 @@ class Visualizer:
                 box = self.__format_box(box)
                 max_w = max(box[0][0], box[1][0], box[2][0], box[3][0], max_w)
                 max_h = max(box[0][1], box[1][1], box[2][1], box[3][1], max_h)
-        return (max_h + min_h, max_w + min_w)
+        return (max_h+min_h, max_w+min_w)
 
     def visualize(self,
             json, 
