@@ -151,7 +151,7 @@ class Visualizer:
                     word_boxes.append(word_box)
                     word_txt = word['text']
                     word_txts.append(word_txt)
-                    word_id = word['id']
+                    word_id = word['id'] if 'id' in word else wordpos
                     get_wordpos_by_id[word_id] = wordpos
                     if word_box == segment_box:
                         # the word has same box with the segment, it shouldn't be paint
