@@ -90,10 +90,9 @@ class Visualizer:
 
     def __get_entity_name(self, entity, word_txts, get_wordpos_by_id, use_entity_text=False, use_entity_type=False):
         entity_elements = entity['word_idx']
-        if use_entity_type == True and use_entity_text == True:
-            entity_name = entity['label']+'-'
-        elif use_entity_text == False:
-            entity_name = ''
+        if use_entity_text:
+            if use_entity_type: entity_name = entity['label']+'-'
+            else: entity_name = ''
             for element in entity_elements:
                 if element in get_wordpos_by_id:
                     element_pos = get_wordpos_by_id[element]
@@ -135,7 +134,8 @@ class Visualizer:
         wordpos = 0
 
         if 'label_segment_order' in json:
-            segment_orders = json['label_segment_order']
+            segment_orders_map = json['label_segment_order']
+            segment_orders = []
 
         for doc in json['document']:
             raw_segmemt_box = doc['box']
@@ -143,6 +143,8 @@ class Visualizer:
             segment_boxes.append(segment_box)
             segment_txt = doc['text']
             segment_txts.append(segment_txt)
+            if 'label_segment_order' in json:
+                segment_orders.append(segment_orders_map.index(doc['id']))
             words = doc['words']
             for word in words:
                 if 'box' in word:
@@ -392,7 +394,7 @@ class Visualizer:
         # draw segment boxes
         if use_order == False:
             segment_orders = [None] * len(segment_boxes)
-        for idx, (box, txt, order) in enumerate(zip(segment_boxes, 
+        for idx, (box, txt, order) in enumerate(zip(segment_boxes,
                                                     segment_txts, 
                                                     segment_orders)):
             color = self.segment_color
